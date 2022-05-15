@@ -1,3 +1,6 @@
+<?php helper('form'); ?>
+<div id="myDiv"></div>
+<!-- Contact-->
 <section class="page-section" id="contact">
     <div class="container">
         <div class="text-center">

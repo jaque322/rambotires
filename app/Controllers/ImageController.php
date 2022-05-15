@@ -40,37 +40,28 @@ class ImageController extends \CodeIgniter\Controller
             $validation->setRule('img', 'Tire Picture', 'required');
 
             if ($validation->run()) {
-                $data = array('res' => "error", 'message' => validation_errors());
+                $data = array('res' => "error", 'message' => validation_errors(),"token"=>csrf_hash());
             } else {
-//                $config['upload_path'] = APPPATH . '../assets/uploads/';
-//                $config['allowed_types'] = 'gif|jpg|png';
-//                $config['max_size'] = '1000';
-                // $config['max_width'] = '1024';
-                // $config['max_height'] = '768';
-//                $this->load->library('upload', $config);
-                // Upload.php line - 1097 public function display_errors($open = '<p>', $close = '</p>')
-
-//                if (!$this->upload->do_upload("img")) {
+//
                 $img = $this->request->getFile('img');
                 if ($img->hasMoved()) {
-                    $data = array('res' => "error", 'message' => $this->upload->display_errors());
+                    $data = array('res' => "error", 'message' => $this->upload->display_errors(),'token'=>csrf_hash());
                 } else {
                     $randomName = $img->getRandomName();
 
                     if ($img->move('uploads', $randomName)) {
-                        $data = array('res' => "error", 'message' => "Failed to add data");
+                        $data = array('res' => "error", 'message' => "Failed to add data",'token'=>csrf_hash());
 
                     }
 
-//                    $ajax_data = $this->input->post();
-//                    $ajax_data['img'] = $this->upload->data('file_name');
                     $data = ['brand' => $this->request->getVar('brand'),
                         'dimensions' => $this->request->getVar('dimensions'),
                         'description' => $this->request->getVar('description'), '
-                    category' => $this->request->getVar('category'),
+                        category' => $this->request->getVar('category'),
                         'created_at' => '05/25/1988', 'image' => $randomName,
                         'sign' => $this->request->getVar('sign')
                     ];
+
                     if ($builder->insert($data)) {
                         $data = array('res' => "success", 'message' => "Data added successfully");
                     } else {
@@ -84,6 +75,7 @@ class ImageController extends \CodeIgniter\Controller
 //                    }
                 }
             }
+            $data['token'] = csrf_hash();
             echo json_encode($data);
         } else {
             echo "No direct script access allowed";
@@ -119,13 +111,14 @@ class ImageController extends \CodeIgniter\Controller
                 $filename = $row['image'];
             }
 
-            $path ='uploads/'. "/" . $filename;
+            $path = 'uploads/' . "/" . $filename;
             if (unlink($path)) {
                 $builder->delete(['id' => $del_id]);
                 $data = array('res' => "success", 'message' => "Data delete successfully");
             } else {
                 $data = array('res' => "error", 'message' => "Delete query errors");
             }
+            $data['token'] = csrf_hash();
             echo json_encode($data);
         } else {
             echo "No direct script access allowed";
@@ -138,16 +131,19 @@ class ImageController extends \CodeIgniter\Controller
 
     public function edit()
     {
-        if ($this->input->is_ajax_request()) {
+        $db = db_connect();
+        $builder = $db->table('tire');
 
-            $edit_id = $this->input->get('edit_id');
+        if ($this->request->isAJAX()) {
 
-            if ($post = $this->crud_model->single_entry($edit_id)) {
-                $data = array('res' => "success", 'post' => $post);
+            $edit_id = $this->request->getVar('edit_id');
+
+            if ($post = $builder->getWhere(['id' => $edit_id])) {
+                $data = array('res' => "success", 'post' => $post->getResult());
             } else {
                 $data = array('res' => "error", 'message' => "Failed to fetch data");
             }
-
+            $data['token'] = csrf_hash();
             echo json_encode($data);
         } else {
             echo "No direct script access allowed";
@@ -160,45 +156,75 @@ class ImageController extends \CodeIgniter\Controller
 
     public function update()
     {
-        if ($this->input->is_ajax_request()) {
-            $this->form_validation->set_rules('name', 'Name', 'required');
-            $this->form_validation->set_rules('email', 'Email', 'required|valid_email');
-            $this->form_validation->set_rules('mob', 'Mobile No.', 'required');
+        $db = db_connect();
+        $builder = $db->table('tire');
+        $img = $this->request->getFile('edit_img');
 
-            if ($this->form_validation->run() == FALSE) {
-                $data = array('res' => "error", 'message' => validation_errors());
+        if ($this->request->isAJAX()) {
+            $validation = \Config\Services::validation();
+            $validation->setRule('brand', 'Brand', 'required');
+            $validation->setRule('dimensions', 'Dimensions', 'required');
+            $validation->setRule('description', 'description', 'required');
+
+            if ($validation->run()) {
+
             } else {
-                if (isset($_FILES["edit_img"]["name"])) {
-                    $config['upload_path'] = APPPATH . '../assets/uploads/';
-                    $config['allowed_types'] = 'gif|jpg|png';
-                    $config['max_size'] = '1000';
-                    // $config['max_width'] = '1024';
-                    // $config['max_height'] = '768';
-                    $this->load->library('upload', $config);
 
-                    if (!$this->upload->do_upload("edit_img")) {
-                        $data = array('res' => "error", 'message' => $this->upload->display_errors());
+        if ($img!=null) {
+//                    validating file
+
+                    $validationRule = [
+                        'userfile' => [
+                            'label' => 'Image File',
+                            'rules' => 'uploaded[userfile]'
+                                . '|is_image[userfile]'
+                                . '|mime_in[userfile,image/jpg,image/jpeg,image/gif,image/png,image/webp]'
+                                . '|max_size[userfile,100]'
+                                . '|max_dims[userfile,1024,768]',
+                        ],
+                    ];
+                    if ($this->validate($validationRule)) {
+                        $data = ['errors' => $this->validator->getErrors(), 'token' => csrf_hash()];
+
                     } else {
-                        $edit_id = $this->input->post('edit_id');
-                        if ($post = $this->crud_model->single_entry($edit_id)) {
-                            unlink(APPPATH . '../assets/uploads/' . $post->img);
-                            $ajax_data['img'] = $this->upload->data('file_name');
+                        $edit_id = $this->request->getVar('edit_id');
+                        if ($post = $builder->getWhere(['id' => $edit_id])) {
+                            foreach ($post->getResult('array') as $row) {
+                                $filename = $row['image'];
+                            }
+                            $path = 'uploads/'."/".$filename;
+                            unlink($path);
+                            $randomName = $img->getRandomName();
+                            $img->move('uploads', $randomName);
+
+                            $ajax_data['image'] = $randomName;
+
                         }
                     }
+
                 }
-                $id = $this->input->post('edit_id');
-                $ajax_data['name'] = $this->input->post('name');
-                $ajax_data['email'] = $this->input->post('email');
-                $ajax_data['mob'] = $this->input->post('mob');
-                if ($this->crud_model->update_entry($id, $ajax_data)) {
-                    $data = array('res' => "success", 'message' => "Data update successfully");
+                $ajax_data['id'] = $this->request->getVar('edit_id');
+                $ajax_data['brand'] = $this->request->getVar('brand');
+                $ajax_data['dimensions'] = $this->request->getVar('dimensions');
+                $ajax_data['description'] = $this->request->getVar('description');
+                if ($builder->replace($ajax_data)) {
+                    $data = array('res' => "success", 'message' => "Data update successfully", "token" => csrf_hash());
                 } else {
-                    $data = array('res' => "error", 'message' => "Failed to update data");
+                    $data = array('res' => "error", 'message' => "Failed to update data", "token" => csrf_hash());
                 }
             }
+            $data['token'] = csrf_hash();
             echo json_encode($data);
         } else {
             echo "No direct script access allowed";
+        }
+    }
+
+    public function updateToken()
+    {
+        if ($this->request->isAJAX()) {
+            $data = array("token" => csrf_hash());
+            echo json_encode($data);
         }
     }
 }

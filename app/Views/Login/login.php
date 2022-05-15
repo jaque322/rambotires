@@ -1,4 +1,8 @@
-<div class="container" style="margin-top:20px;">
+<?= $this->extend('layout/app') ?>
+<?= $this->section('body') ?>
+<?= $this->include('frontend/navigation') ?>
+<h1></h1>
+<div class="container" style="margin-top:150px;">
     <div class="row">
         <div class="col-sm-6">
             <div class="panel panel-primary">
@@ -12,6 +16,7 @@
                         </div>
                     <?php endif; ?>
                     <form class="" action="<?= base_url('login') ?>" method="post">
+                        <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                         <div class="form-group">
                             <label for="email">Email</label>
                             <input type="email" class="form-control" name="email" id="email">
@@ -20,6 +25,7 @@
                             <label for="password">Password</label>
                             <input type="password" class="form-control" name="password" id="password">
                         </div>
+                        <br>
                         <button type="submit" class="btn btn-success">Submit</button>
                     </form>
                 </div>
@@ -27,4 +33,8 @@
         </div>
     </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<?= $this->endSection() ?>
+
+
+

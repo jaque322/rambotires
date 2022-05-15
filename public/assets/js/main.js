@@ -78,6 +78,7 @@ $(document).on("click", "#add", function(e) {
                     $("#addRecordForm")[0].reset();
                     $(".add-file-label").html("Choose file");
                     $("#recordTable").DataTable().destroy();
+                    updateTokenCSFR(response.token);
                     fetch();
                 } else {
 
@@ -87,6 +88,22 @@ $(document).on("click", "#add", function(e) {
         });
     }
 });
+
+/* -------------------------------------------------------------------------- */
+/*                                update token csfr                               */
+/* -------------------------------------------------------------------------- */
+function updateTokenCSFR(token) {
+    $("#csfr_token_id").val(token)
+
+}
+
+function updateEditTokenCSFR(token) {
+    $("#edit_csfr_token_id").val(token)
+
+}
+
+
+
 
 /* -------------------------------------------------------------------------- */
 /*                                Fetch Records                               */
@@ -184,6 +201,7 @@ $(document).on("click", "#del", function(e) {
                             "success"
                         );
                         $("#recordTable").DataTable().destroy();
+                        updateTokenCSFR(response.token)
                         fetch();
                     }
                 },
@@ -202,7 +220,7 @@ $(document).on("click", "#edit", function(e) {
     var edit_id = $(this).attr("value");
 
     $.ajax({
-        url: base_url + "edit",
+        url: base_url + "admin/edit",
         type: "get",
         dataType: "JSON",
         data: {
@@ -210,13 +228,15 @@ $(document).on("click", "#edit", function(e) {
         },
         success: function(data) {
             if (data.res === "success") {
+                console.log("token "+data.token)
+                updateEditTokenCSFR(data.token);
                 $("#editRecords").modal("show");
-                $("#edit_record_id").val(data.post.id);
-                $("#edit_name").val(data.post.name);
-                $("#edit_email").val(data.post.email);
-                $("#edit_mob").val(data.post.mob);
+                $("#edit_record_id").val(data.post[0].id);
+                $("#edit_brand").val(data.post[0].brand);
+                $("#edit_dimensions").val(data.post[0].dimensions);
+                $("#edit_descriptions").val(data.post[0].description);
                 $("#show_img").html(`
-                    <img src="${base_url}assets/uploads/${data.post.img}" width="150" height="150" class="rounded img-thumbnail">
+                    <img src="${base_url}uploads/${data.post[0].image}" width="150" height="150" class="rounded img-thumbnail">
                 `);
             } else {
                 toastr["error"](data.message, "Error");
@@ -232,28 +252,40 @@ $(document).on("click", "#edit", function(e) {
 $(document).on("click", "#update", function(e) {
     e.preventDefault();
 
+    const csrfName = $("#edit_csfr_token_id").attr("name");
+    const csrfHash = $("#edit_csfr_token_id").val();
     var edit_id = $("#edit_record_id").val();
-    var name = $("#edit_name").val();
-    var email = $("#edit_email").val();
-    var mob = $("#edit_mob").val();
+    var brand = $("#edit_brand").val();
+    var dimensions = $("#edit_dimensions").val();
+    var descriptions = $("#edit_descriptions").val();
     var edit_img = $("#edit_img")[0].files[0];
 
-    if (name == "" || email == "" || mob == "") {
+    if (brand == "" || dimensions == "" || descriptions == "") {
         alert("All field are required");
+        $.ajax({
+            type: "get",
+            url: base_url + "admin/updateToken",
+            dataType: "json",
+            success: function(response) {
+                updateEditTokenCSFR(response.token);
+            },
+        });
     } else {
+
         var fd = new FormData();
 
         fd.append("edit_id", edit_id);
-        fd.append("name", name);
-        fd.append("email", email);
-        fd.append("mob", mob);
+        fd.append("brand", brand);
+        fd.append("dimensions", dimensions);
+        fd.append("description", descriptions);
+        fd.append(csrfName,csrfHash);
         if ($("#edit_img")[0].files.length > 0) {
             fd.append("edit_img", edit_img);
         }
 
         $.ajax({
             type: "post",
-            url: base_url + "update",
+            url: base_url + "admin/update",
             data: fd,
             processData: false,
             contentType: false,
@@ -265,8 +297,10 @@ $(document).on("click", "#update", function(e) {
                     $("#editForm")[0].reset();
                     $(".edit-file-label").html("Choose file");
                     $("#recordTable").DataTable().destroy();
+                    updateTokenCSFR(response.token)
                     fetch();
                 } else {
+                    updateTokenCSFR(response.token)
                     toastr["error"](response.message);
                 }
             },

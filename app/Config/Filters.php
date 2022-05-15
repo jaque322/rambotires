@@ -38,8 +38,8 @@ class Filters extends BaseConfig
      */
     public $globals = [
         'before' => [
-            'csrf'=>['except' => ['/admin/delete']],
-            // 'invalidchars',
+            //'honeypot'
+            'csrf',
         ],
         'after' => [
             'toolbar',

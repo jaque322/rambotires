@@ -31,24 +31,25 @@ $routes->setAutoRoute(true);
 
 // We get a performance increase by specifying the default
 // route since we don't have to scan directories.
-$routes->get('/', 'Blog::index',["as" => "rootUrl"]);
+$routes->get('/', 'Blog::index', ["as" => "rootUrl"]);
 $routes->get('/post', 'Blog::post');
 $routes->post('/contact-us', 'MailController::processContact');
-$routes->get('/admin/product','TireController::index',["as" => "listTires"]);
-$routes->post('/admin/create','TireController::store');
+$routes->post('/admin/create', 'TireController::store');
 //crud routes
-$routes->post ('/admin/insert','ImageController::insert');
-$routes->post ('/admin/delete','ImageController::delete');
-$routes->get('/admin/fetch','ImageController::fetch');
-$route['edit'] = 'welcome/edit';
 $route['update'] = 'welcome/update';
-//user login routes
-//...
 
-//$routes->get('/','UserController::index',["as" => "login"]);
+//user login routes
+
 $routes->match(['get', 'post'], 'login', 'UserController::login', ["filter" => "noauth"]);
 // Admin routes
 $routes->group("admin", ["filter" => "auth"], function ($routes) {
+$routes->post('insert', 'ImageController::insert');
+$routes->post('delete', 'ImageController::delete');
+$routes->post('update', 'ImageController::update');
+$routes->get('edit', 'ImageController::edit');
+$routes->get('updateToken', 'ImageController::updateToken');
+$routes->get('fetch', 'ImageController::fetch');
+    $routes->get('product', 'TireController::index', ["as" => "listTires"]);
     $routes->get("/", "AdminController::index");
 });
 // Editor routes
@@ -58,7 +59,6 @@ $routes->group("editor", ["filter" => "auth"], function ($routes) {
 $routes->get('logout', 'UserController::logout');
 
 //...
-
 
 
 /*
